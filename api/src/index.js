@@ -1,10 +1,12 @@
+import './config/telemetry.js';
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import connectDB from "./config/db.js";
 import dotenv from "dotenv";
+import morgan from "morgan";
+import logger from "./config/logger.js";
 
 import healthRouter from './routes/health.js';
 import privateRouter from './routes/private.js';
@@ -35,6 +37,15 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Log all incoming HTTP requests
+app.use(
+    morgan("tiny", {
+      stream: {
+        write: (message) => logger.info(message.trim()),
+      },
+    })
+  );
 
 // Routes
 app.use('/health', healthRouter);

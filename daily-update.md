@@ -197,4 +197,4 @@ tenant-aware **CRUD** endpoints for persistent data.
 
 - JWT → Express middleware → Mongoose → Atlas collection
 
-- Viewed data directly in MongoDB Atlas UI
+- Viewed data directly in MongoDB Atlas UI 

@@ -10,6 +10,20 @@ const requireAuth = auth({
 });
 
 // Protected route: only accessible with valid Auth0 token
+/**
+ * @openapi
+ * /protected:
+ *   get:
+ *     summary: Protected test endpoint
+ *     description: Verifies if JWT validation is working via Auth0.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Valid token - returns user info
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/', requireAuth, (req, res) => {
   res.json({
     ok: true,

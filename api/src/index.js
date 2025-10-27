@@ -31,6 +31,9 @@ dotenv.config();
 connectDB();
 const app = express();
 
+import { setupSwagger } from "./swagger.js";
+setupSwagger(app);
+
 app.use(express.json()); // parse JSON bodies
 
 // Core middleware
@@ -49,7 +52,7 @@ app.use(
   );
 
 // Routes
-app.use('/health', healthRouter);
+app.use('/api/health', healthRouter);
 app.use('/api/private', privateRouter);
 app.use('/api/public', publicRouter);
 

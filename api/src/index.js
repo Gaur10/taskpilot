@@ -15,12 +15,13 @@ import { injectMockRoles } from "./middleware/mockRoles.js";
 import { checkRole } from "./middleware/checkRole.js";
 import { injectMockTenant } from "./middleware/injectMockTenant.js";
 import projectRoutes from "./routes/projectRoutes.js";
+import { checkJwt } from "./middleware/checkJwt.js";
 import pkg from "express-oauth2-jwt-bearer";
 const { auth } = pkg;
 
 const requireAuth = auth({
   audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+  issuerBaseURL: process.env.AUTH0_DOMAIN,
 });
 // import pkg from "express-oauth2-jwt-bearer";
 // const { auth, requiredScopes, claimCheck, requireAuth } = pkg;
@@ -108,6 +109,15 @@ app.get("/api/tenant-info",requireAuth, injectMockRoles, injectMockTenant, (req,
 
 // === New Project Routes ===
 app.use("/api/projects", projectRoutes);
+
+// Temporary test route — will remove later
+app.get("/api/protected", checkJwt, (req, res) => {
+  res.json({
+    ok: true,
+    sub: req.auth?.payload?.sub,
+  });
+});
+
 
 // Startup
 const PORT = process.env.PORT || 4000;

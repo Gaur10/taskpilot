@@ -5,7 +5,7 @@ const { auth, requiredScopes, claimCheck, requireAuth } = pkg;
  */
 export const requireAuth = auth({
   audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+  issuerBaseURL: process.env.AUTH0_DOMAIN,
   tokenSigningAlg: 'RS256',
 });
 

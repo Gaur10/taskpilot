@@ -8,6 +8,7 @@ export default function TestApi() {
   const callProtectedApi = async () => {
     try {
       const token = await getAccessTokenSilently();
+      console.log(token)
       const res = await fetch(`${import.meta.env.VITE_API_URL}/protected`, {
         headers: {
           Authorization: `Bearer ${token}`,

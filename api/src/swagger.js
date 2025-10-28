@@ -26,6 +26,12 @@ const options = {
       },
     },
 
+    tags: [
+        {
+          name: "Projects",
+          description: "CRUD operations for managing user or tenant-specific projects in TaskPilot.",
+        },
+    ],
     // 👇 Add this block globally for all endpoints
     security: [
       {

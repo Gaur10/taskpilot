@@ -22,6 +22,8 @@ const router = express.Router();
  *     description: Adds a new project for the logged-in user.
  *     security:
  *       - bearerAuth: []
+ *     tags:
+ *       - Projects
  *     requestBody:
  *       required: true
  *       content:
@@ -38,17 +40,17 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+ router.post("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
     const { name, description } = req.body;
     const tenant = req.auth.payload["https://taskpilot-api/tenant"];
-    const createdBy = req.auth.payload.sub;
+    const ownerSub = req.auth.payload.sub; // ✅ Auth0 user ID
 
     const project = await Project.create({
+      ownerSub, // ✅ required field
       name,
       description,
       tenantId: tenant,
-      createdBy,
     });
 
     res.status(201).json({ ok: true, project });
@@ -57,6 +59,7 @@ router.post("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
 
 // GET /api/projects — Fetch all projects for this tenant
 /**
@@ -67,6 +70,8 @@ router.post("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res
  *     description: Returns a list of projects belonging to the current Auth0 user.
  *     security:
  *       - bearerAuth: []
+ *     tags:
+ *       - Projects
  *     responses:
  *       200:
  *         description: Successful response with a list of projects
@@ -84,5 +89,152 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+// GET /api/projects/:id — Get details of a specific project
+/**
+ * @openapi
+ * /projects/{id}:
+ *   get:
+ *     summary: Get details for a specific project
+ *     description: Returns full project data for the given ID (tenant-scoped).
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Projects
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 671e9f1b234abc56def01234
+ *     responses:
+ *       200:
+ *         description: Project found
+ *       404:
+ *         description: Project not found or not accessible
+ *       401:
+ *         description: Unauthorized
+ */
+ router.get("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+  try {
+    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
+    const { id } = req.params;
+
+    // Tenant-scoped lookup
+    const project = await Project.findOne({ _id: id, tenantId: tenant });
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: "Project not found" });
+    }
+
+    res.json({ ok: true, project });
+  } catch (err) {
+    console.error("❌ Error fetching project by ID:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
+// PUT /api/projects/:id — Update a project
+/**
+ * @openapi
+ * /projects/{id}:
+ *   put:
+ *     summary: Update a project
+ *     description: Edit name or description for an existing project
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Projects
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Updated project name"
+ *               description:
+ *                 type: string
+ *                 example: "Updated description"
+ *     responses:
+ *       200:
+ *         description: Project updated successfully
+ *       404:
+ *         description: Project not found
+ */
+ router.put("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+  try {
+    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    const project = await Project.findOneAndUpdate(
+      { _id: id, tenantId: tenant },
+      { name, description },
+      { new: true }
+    );
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: "Project not found" });
+    }
+
+    res.json({ ok: true, project });
+  } catch (err) {
+    console.error("❌ Error updating project:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// DELETE /api/projects/:id — Remove a project
+/**
+ * @openapi
+ * /projects/{id}:
+ *   delete:
+ *     summary: Delete a project
+ *     description: Permanently removes a project for the current tenant.
+ *     security:
+ *       - bearerAuth: []
+ *     tags:
+ *       - Projects
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Project deleted successfully
+ *       404:
+ *         description: Project not found
+ */
+router.delete("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+  try {
+    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
+    const { id } = req.params;
+
+    const project = await Project.findOneAndDelete({ _id: id, tenantId: tenant });
+
+    if (!project) {
+      return res.status(404).json({ ok: false, message: "Project not found" });
+    }
+
+    res.json({ ok: true, message: "Project deleted", project });
+  } catch (err) {
+    console.error("❌ Error deleting project:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 
 export default router;

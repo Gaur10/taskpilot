@@ -2,27 +2,15 @@ import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, "Project name is required"],
-    },
-    description: {
-      type: String,
-      default: "",
-    },
-    tenantId: {
-      type: String,
-      required: true,
-      index: true, // helps query by tenant
-    },
-    createdBy: {
-      type: String,
-      required: true,
-    },
+    ownerSub: { type: String, required: true, index: true },
+    name: { type: String, required: true, trim: true },
+    description: { type: String, default: "", trim: true },
+    status: { type: String, enum: ["active", "completed", "archived"], default: "active" },
+    tags: { type: [String], default: [] },
+    dueDate: { type: Date },
+    tenantId: { type: String, required: false }, // ✅ optional for now
   },
-  {
-    timestamps: true, // adds createdAt, updatedAt automatically
-  }
+  { timestamps: true }
 );
 
 const Project = mongoose.model("Project", projectSchema);

@@ -34,6 +34,9 @@ const router = express.Router();
  *               name:
  *                 type: string
  *                 example: "My New Project"
+ *               description:
+ *                 type: string
+ *                 example: "Optional description here"
  *     responses:
  *       201:
  *         description: Project created successfully

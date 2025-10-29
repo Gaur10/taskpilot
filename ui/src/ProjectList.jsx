@@ -1,57 +1,77 @@
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import ProjectForm from "./ProjectForm";
 
 export default function ProjectList() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        if (!isAuthenticated) return;
+  // ✅ Define fetchProjects so it can be reused
+  const fetchProjects = async () => {
+    try {
+      if (!isAuthenticated) return;
+      const token = await getAccessTokenSilently();
 
-        const token = await getAccessTokenSilently();
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-        if (data.ok) {
-          setProjects(data.projects);
-        } else {
-          console.error("❌ Failed to fetch projects:", data.error);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching projects:", err);
-      } finally {
-        setLoading(false);
+      const data = await res.json();
+      if (data.ok) {
+        setProjects(data.projects);
+      } else {
+        console.error("❌ Failed to fetch projects:", data.error);
       }
-    };
+    } catch (err) {
+      console.error("❌ Error fetching projects:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // ✅ Allow ProjectForm to trigger a refresh
+  const refreshProjects = () => {
+    setLoading(true);
+    fetchProjects();
+  };
+
+  // ✅ Initial load
+  useEffect(() => {
     fetchProjects();
   }, [getAccessTokenSilently, isAuthenticated]);
 
   if (!isAuthenticated) return <p>Please log in to see your projects.</p>;
   if (loading) return <p>Loading projects...</p>;
 
+  // ✅ Render UI
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>Your Projects</h2>
+    <div style={{ padding: "1rem", maxWidth: "600px", margin: "auto" }}>
+    <h2>Your Projects</h2>
+    <ProjectForm onProjectCreated={refreshProjects} />
+
+    <div
+      style={{
+        backgroundColor: "#f9f9f9",
+        border: "1px solid #ddd",
+        borderRadius: "8px",
+        padding: "1rem",
+      }}
+    >
       {projects.length === 0 ? (
         <p>No projects found. Try creating one!</p>
       ) : (
-        <ul>
+        <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
           {projects.map((p) => (
-            <li key={p._id}>
+            <li key={p._id} style={{ marginBottom: "0.5rem" }}>
               <strong>{p.name}</strong> — {p.description || "No description"}
             </li>
           ))}
         </ul>
       )}
     </div>
+  </div>
   );
 }

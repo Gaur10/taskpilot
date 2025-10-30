@@ -203,8 +203,8 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
  * @openapi
  * /projects/{id}:
  *   delete:
- *     summary: Delete a project
- *     description: Permanently removes a project for the current tenant.
+ *     summary: Delete a specific project
+ *     description: Removes a project by its MongoDB ID (tenant and Auth0 protected).
  *     security:
  *       - bearerAuth: []
  *     tags:
@@ -215,24 +215,48 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
  *         required: true
  *         schema:
  *           type: string
+ *         description: Project ID to delete
  *     responses:
  *       200:
  *         description: Project deleted successfully
  *       404:
  *         description: Project not found
+ *       401:
+ *         description: Unauthorized
  */
-router.delete("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+ router.delete("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
-    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
     const { id } = req.params;
+    const ownerSub = req.auth?.payload?.sub;
+    const tenant = req.auth?.payload?.["https://taskpilot-api/tenant"];
+    
 
-    const project = await Project.findOneAndDelete({ _id: id, tenantId: tenant });
+    // Fallback: allow delete if fields missing for older data
+    const query = { _id: id };
+    if (ownerSub) query.$or = [{ ownerSub }, { createdBy: ownerSub }];
+    if (tenant) query.tenantId = tenant;
+    const project = await Project.findOneAndDelete(query);
 
     if (!project) {
-      return res.status(404).json({ ok: false, message: "Project not found" });
+      // Debug log for developers
+      console.warn("🚫 Delete blocked — reason:", {
+        projectId: id,
+        userSub: ownerSub,
+        tenantFromToken: tenant,
+        reason: "No matching project found for this _id, tenant, and ownerSub/createdBy combo"
+      });
+    
+      return res.status(404).json({
+        ok: false,
+        error:
+          "Delete blocked: You can only delete projects created under your Auth0 account within the same tenant.",
+        hint:
+          "If this project was created via Swagger/cURL (M2M client), it uses a different Auth0 identity (sub) than your UI login.",
+      });
     }
+    
 
-    res.json({ ok: true, message: "Project deleted", project });
+    res.json({ ok: true, message: "Project deleted successfully", id });
   } catch (err) {
     console.error("❌ Error deleting project:", err);
     res.status(500).json({ ok: false, error: err.message });

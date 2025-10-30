@@ -46,6 +46,33 @@ export default function ProjectList() {
   if (!isAuthenticated) return <p>Please log in to see your projects.</p>;
   if (loading) return <p>Loading projects...</p>;
 
+  
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+  
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      const data = await res.json();
+  
+      if (data.ok) {
+        alert("✅ Project deleted successfully!");
+        refreshProjects(); // Re-fetch projects after deletion
+      } else {
+        alert(`❌ Failed to delete: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Error deleting:", err);
+      alert("⚠️ Network or auth error while deleting.");
+    }
+  };
+  
   // ✅ Render UI
   return (
     <div style={{ padding: "1rem", maxWidth: "600px", margin: "auto" }}>
@@ -65,10 +92,34 @@ export default function ProjectList() {
       ) : (
         <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
           {projects.map((p) => (
-            <li key={p._id} style={{ marginBottom: "0.5rem" }}>
-              <strong>{p.name}</strong> — {p.description || "No description"}
-            </li>
-          ))}
+  <li
+    key={p._id}
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "0.5rem",
+    }}
+  >
+    <div>
+      <strong>{p.name}</strong> — {p.description || "No description"}
+    </div>
+
+    <button
+      onClick={() => handleDelete(p._id)}
+      style={{
+        backgroundColor: "#dc3545",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        padding: "0.25rem 0.5rem",
+        cursor: "pointer",
+      }}
+    >
+      Delete
+    </button>
+  </li>
+))}
         </ul>
       )}
     </div>

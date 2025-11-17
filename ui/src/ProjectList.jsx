@@ -13,7 +13,7 @@ export default function ProjectList() {
       if (!isAuthenticated) return;
       const token = await getAccessTokenSilently();
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/projects`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

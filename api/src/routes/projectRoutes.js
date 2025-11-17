@@ -1,15 +1,8 @@
-import express from "express";
-import Project from "../models/projectModel.js";
-import { injectMockRoles } from "../middleware/mockRoles.js";
-import { injectMockTenant } from "../middleware/injectMockTenant.js";
-import pkg from "express-oauth2-jwt-bearer";
-const { auth } = pkg;
-
-// define middleware directly
-const requireAuth = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_DOMAIN,
-});
+import express from 'express';
+import Project from '../models/projectModel.js';
+import { injectMockRoles } from '../middleware/mockRoles.js';
+import { injectMockTenant } from '../middleware/injectMockTenant.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -43,22 +36,30 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
- router.post("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+router.post('/', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
     const { name, description } = req.body;
-    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
-    const ownerSub = req.auth.payload.sub; // ✅ Auth0 user ID
+    const tenant = req.auth.payload['https://taskpilot-api/tenant'];
+    const ownerSub = req.auth.payload.sub;
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({ ok: false, error: 'Project name is required' });
+    }
+    if (!tenant) {
+      return res.status(400).json({ ok: false, error: 'Tenant context is required' });
+    }
 
     const project = await Project.create({
-      ownerSub, // ✅ required field
-      name,
-      description,
+      ownerSub,
+      name: name.trim(),
+      description: description?.trim() || '',
       tenantId: tenant,
     });
 
     res.status(201).json({ ok: true, project });
   } catch (err) {
-    console.error("❌ Error creating project:", err);
+    console.error('❌ Error creating project:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -81,14 +82,20 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized - missing or invalid token
  */
-router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+router.get('/', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
-    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
-    const projects = await Project.find({ tenantId: tenant });
+    const tenant = req.auth.payload['https://taskpilot-api/tenant'];
+    
+    if (!tenant) {
+      return res.status(400).json({ ok: false, error: 'Tenant context is required' });
+    }
 
-    res.json({ ok: true, projects });
+    // Strictly scoped to tenant
+    const projects = await Project.find({ tenantId: tenant }).sort({ createdAt: -1 });
+
+    res.json({ ok: true, projects, count: projects.length });
   } catch (err) {
-    console.error("❌ Error fetching projects:", err);
+    console.error('❌ Error fetching projects:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -119,21 +126,25 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
  *       401:
  *         description: Unauthorized
  */
- router.get("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+router.get('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
-    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
+    const tenant = req.auth.payload['https://taskpilot-api/tenant'];
     const { id } = req.params;
 
-    // Tenant-scoped lookup
+    if (!tenant) {
+      return res.status(400).json({ ok: false, error: 'Tenant context is required' });
+    }
+
+    // Strictly tenant-scoped lookup
     const project = await Project.findOne({ _id: id, tenantId: tenant });
 
     if (!project) {
-      return res.status(404).json({ ok: false, message: "Project not found" });
+      return res.status(404).json({ ok: false, error: 'Project not found or access denied' });
     }
 
     res.json({ ok: true, project });
   } catch (err) {
-    console.error("❌ Error fetching project by ID:", err);
+    console.error('❌ Error fetching project by ID:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -175,25 +186,31 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
  *       404:
  *         description: Project not found
  */
- router.put("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
-    const tenant = req.auth.payload["https://taskpilot-api/tenant"];
+    const tenant = req.auth.payload['https://taskpilot-api/tenant'];
+    const ownerSub = req.auth.payload.sub;
     const { id } = req.params;
     const { name, description } = req.body;
 
+    if (!tenant) {
+      return res.status(400).json({ ok: false, error: 'Tenant context is required' });
+    }
+
+    // Only update if tenant matches AND user is the owner
     const project = await Project.findOneAndUpdate(
-      { _id: id, tenantId: tenant },
-      { name, description },
-      { new: true }
+      { _id: id, tenantId: tenant, ownerSub },
+      { name: name?.trim(), description: description?.trim() },
+      { new: true, runValidators: true },
     );
 
     if (!project) {
-      return res.status(404).json({ ok: false, message: "Project not found" });
+      return res.status(404).json({ ok: false, error: 'Project not found or access denied' });
     }
 
     res.json({ ok: true, project });
   } catch (err) {
-    console.error("❌ Error updating project:", err);
+    console.error('❌ Error updating project:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -224,41 +241,45 @@ router.get("/", requireAuth, injectMockRoles, injectMockTenant, async (req, res)
  *       401:
  *         description: Unauthorized
  */
- router.delete("/:id", requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
+router.delete('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
     const { id } = req.params;
     const ownerSub = req.auth?.payload?.sub;
-    const tenant = req.auth?.payload?.["https://taskpilot-api/tenant"];
-    
+    const tenant = req.auth?.payload?.['https://taskpilot-api/tenant'];
 
-    // Fallback: allow delete if fields missing for older data
-    const query = { _id: id };
-    if (ownerSub) query.$or = [{ ownerSub }, { createdBy: ownerSub }];
-    if (tenant) query.tenantId = tenant;
-    const project = await Project.findOneAndDelete(query);
+    if (!tenant) {
+      return res.status(400).json({ ok: false, error: 'Tenant context is required' });
+    }
+
+    // Strictly scoped: must match tenant AND owner
+    const project = await Project.findOneAndDelete({
+      _id: id,
+      tenantId: tenant,
+      ownerSub,
+    });
 
     if (!project) {
       // Debug log for developers
-      console.warn("🚫 Delete blocked — reason:", {
+      console.warn('🚫 Delete blocked — reason:', {
         projectId: id,
         userSub: ownerSub,
         tenantFromToken: tenant,
-        reason: "No matching project found for this _id, tenant, and ownerSub/createdBy combo"
+        reason: 'No matching project found for this _id, tenant, and ownerSub/createdBy combo',
       });
     
       return res.status(404).json({
         ok: false,
         error:
-          "Delete blocked: You can only delete projects created under your Auth0 account within the same tenant.",
+          'Delete blocked: You can only delete projects created under your Auth0 account within the same tenant.',
         hint:
-          "If this project was created via Swagger/cURL (M2M client), it uses a different Auth0 identity (sub) than your UI login.",
+          'If this project was created via Swagger/cURL (M2M client), it uses a different Auth0 identity (sub) than your UI login.',
       });
     }
     
 
-    res.json({ ok: true, message: "Project deleted successfully", id });
+    res.json({ ok: true, message: 'Project deleted successfully', id });
   } catch (err) {
-    console.error("❌ Error deleting project:", err);
+    console.error('❌ Error deleting project:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });

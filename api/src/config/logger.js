@@ -5,13 +5,13 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    winston.format.json(),
   ),
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.simple()
+        winston.format.simple(),
       ),
     }),
   ],
@@ -21,7 +21,7 @@ const logger = winston.createLogger({
 logger.exceptions.handle(
   new winston.transports.Console({
     format: winston.format.simple(),
-  })
+  }),
 );
 
 export default logger;

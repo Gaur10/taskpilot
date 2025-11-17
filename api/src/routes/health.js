@@ -16,7 +16,7 @@ router.get('/', (_req, res) => {
     ok: true,
     service: 'taskpilot-api',
     uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

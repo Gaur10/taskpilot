@@ -1,13 +1,6 @@
 import { Router } from 'express';
-import pkg from "express-oauth2-jwt-bearer";
-const { auth } = pkg;
+import { requireAuth } from '../middleware/auth.js';
 const router = Router();
-
-// define middleware directly
-const requireAuth = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_DOMAIN,
-});
 
 // Protected route: only accessible with valid Auth0 token
 /**

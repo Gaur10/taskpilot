@@ -13,7 +13,15 @@
   "scripts": {
     "dev:api": "pnpm --filter api dev",
     "dev:ui": "pnpm --filter ui dev",
-    "test": "pnpm --filter tests test"
+    "test:api": "pnpm --filter api test",
+    "test:ui": "pnpm --filter ui test",
+    "test:all": "pnpm -r test",
+    "lint:api": "pnpm --filter api lint",
+    "lint:ui": "pnpm --filter ui lint",
+    "lint:all": "pnpm -r lint",
+    "build:api": "pnpm --filter api build",
+    "build:ui": "pnpm --filter ui build",
+    "build:all": "pnpm -r build"
   },
   "author": "Sudhanshu Gaur",
   "license": "MIT",

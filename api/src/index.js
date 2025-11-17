@@ -40,7 +40,19 @@ const maybeInjectMockTenant = (req, res, next) => {
 
 // Core middleware
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? [
+            'https://taskpilot-mcs.pages.dev',
+            'https://ff45c2cf.taskpilot-mcs.pages.dev',
+            /https:\/\/.*\.taskpilot-mcs\.pages\.dev$/, // Allow all Cloudflare preview URLs
+          ]
+        : ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Consolidated logging: send morgan output to our logger

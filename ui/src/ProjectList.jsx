@@ -52,7 +52,7 @@ export default function ProjectList() {
   
     try {
       const token = await getAccessTokenSilently();
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/projects/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

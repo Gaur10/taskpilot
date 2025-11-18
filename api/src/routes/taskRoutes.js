@@ -3,6 +3,7 @@ import Task from '../models/taskModel.js';
 import { injectMockRoles } from '../middleware/mockRoles.js';
 import { injectMockTenant } from '../middleware/injectMockTenant.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getCachedTasks, setCachedTasks, invalidateCache } from '../config/cache.js';
 
 const router = express.Router();
 
@@ -94,6 +95,9 @@ router.post('/', requireAuth, injectMockRoles, injectMockTenant, async (req, res
       ],
     });
 
+    // Invalidate cache after creating new task
+    invalidateCache(tenant);
+
     res.status(201).json({ ok: true, task });
   } catch (err) {
     console.error('❌ Error creating task:', err);
@@ -127,10 +131,19 @@ router.get('/', requireAuth, injectMockRoles, injectMockTenant, async (req, res)
       return res.status(400).json({ ok: false, error: 'Family context is required' });
     }
 
+    // Check cache first
+    const cachedTasks = getCachedTasks(tenant);
+    if (cachedTasks) {
+      return res.json({ ok: true, tasks: cachedTasks, count: cachedTasks.length, cached: true });
+    }
+
     // Family-wide view: return ALL tasks for this family
     const tasks = await Task.find({ tenantId: tenant }).sort({ createdAt: -1 });
 
-    res.json({ ok: true, tasks, count: tasks.length });
+    // Store in cache
+    setCachedTasks(tenant, tasks);
+
+    res.json({ ok: true, tasks, count: tasks.length, cached: false });
   } catch (err) {
     console.error('❌ Error fetching tasks:', err);
     res.status(500).json({ ok: false, error: err.message });
@@ -285,7 +298,7 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
         updates.dueDate = dueDate;
         changes.dueDate = { 
           from: oldDate || 'No due date', 
-          to: newDate || 'No due date' 
+          to: newDate || 'No due date', 
         };
       }
     }
@@ -336,6 +349,9 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
     if (!task) {
       return res.status(404).json({ ok: false, error: 'Task not found or access denied' });
     }
+
+    // Invalidate cache after updating task
+    invalidateCache(tenant);
 
     res.json({ ok: true, task });
   } catch (err) {
@@ -397,6 +413,8 @@ router.delete('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req
       });
     }
     
+    // Invalidate cache after deleting task
+    invalidateCache(tenant);
 
     res.json({ ok: true, message: 'Task deleted successfully', id });
   } catch (err) {

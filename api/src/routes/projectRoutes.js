@@ -199,10 +199,10 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
 
     // Build update object with only provided fields
     const updates = {};
-    if (name !== undefined) updates.name = name?.trim();
-    if (description !== undefined) updates.description = description?.trim();
-    if (status !== undefined) updates.status = status;
-    if (dueDate !== undefined) updates.dueDate = dueDate;
+    if (name !== undefined) {updates.name = name?.trim();}
+    if (description !== undefined) {updates.description = description?.trim();}
+    if (status !== undefined) {updates.status = status;}
+    if (dueDate !== undefined) {updates.dueDate = dueDate;}
 
     // Only update if tenant matches AND user is the owner
     const project = await Project.findOneAndUpdate(

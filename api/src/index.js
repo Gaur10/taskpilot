@@ -16,6 +16,7 @@ import { checkRole } from './middleware/checkRole.js';
 import { injectMockTenant } from './middleware/injectMockTenant.js';
 import taskRoutes from './routes/taskRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 import { checkJwt } from './middleware/checkJwt.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -71,6 +72,7 @@ app.use('/api/health', healthRouter);
 app.use('/api/private', privateRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/ai', aiRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Root
 app.get('/', (_req, res) => {

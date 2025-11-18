@@ -18,7 +18,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
  * Generate smart task description based on task name
  * 
  * @param {string} taskName - The name of the task
- * @param {Object} context - Optional context (assignee, dueDate, etc.)
+ * @param {Object} context - Optional context (assignee, dueDate, familySettings, etc.)
  * @returns {Promise<string>} - AI-generated description
  */
 export async function generateTaskDescription(taskName, context = {}) {
@@ -32,7 +32,7 @@ export async function generateTaskDescription(taskName, context = {}) {
     // Get Gemini model (models/gemini-2.0-flash is verified working)
     const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-flash' });
 
-    // Build prompt with context
+    // Build prompt with context (including family settings)
     const prompt = buildPrompt(taskName, context);
 
     console.log('🤖 Calling Gemini AI for task:', taskName);
@@ -55,11 +55,16 @@ export async function generateTaskDescription(taskName, context = {}) {
  * Build AI prompt with context
  */
 function buildPrompt(taskName, context) {
-  const { assignedToName, dueDate, tags } = context;
+  const { assignedToName, dueDate, tags, familyContext } = context;
 
   let prompt = `You are a helpful family task assistant. Generate a concise, actionable description for this task.
 
 Task: "${taskName}"`;
+
+  // Add family-specific context (neighborhood, stores, schools, routines)
+  if (familyContext) {
+    prompt += `\n\nFamily Context:\n${familyContext}`;
+  }
 
   if (assignedToName) {
     prompt += `\nAssigned to: ${assignedToName}`;
@@ -87,16 +92,17 @@ Task: "${taskName}"`;
 
 Requirements:
 - Keep it under 100 characters
-- Be specific and actionable
+- Be specific and actionable based on the family context provided
+- Use the family's preferred stores, schools, and neighborhood info when relevant
 - Include helpful tips or reminders if relevant
 - Use emojis sparingly (1-2 max)
 - Don't repeat the task name
 - Focus on HOW or WHEN to do it
 
 Examples:
-Task: "Buy milk" → "Pick up 2% from Safeway on the way home"
+Task: "Buy milk" with context (stores: Whole Foods) → "Pick up 2% from Whole Foods after work"
 Task: "Doctor appointment" → "Bring insurance card, arrive 10 min early"
-Task: "Pick up kids" → "School dismissal at 3:15 PM, remember jackets"
+Task: "Pick up kids" with context (school: Lincoln High, 3:15 PM) → "Lincoln High pickup at 3:15 PM. Leave early for traffic!"
 
 Your description:`;
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { generateTaskDescription } from '../services/aiService.js';
+import FamilySettings from '../models/familySettingsModel.js';
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post('/suggest-description', requireAuth, async (req, res) => {
   try {
     const { taskName, assignedToName, dueDate, tags } = req.body;
+    const tenantId = req.auth.tenant;
 
     // Validate input
     if (!taskName || taskName.trim().length === 0) {
@@ -26,11 +28,25 @@ router.post('/suggest-description', requireAuth, async (req, res) => {
       });
     }
 
-    // Generate description
+    // Fetch family settings for personalized context
+    let familyContext = null;
+    try {
+      const settings = await FamilySettings.findOne({ tenantId });
+      if (settings) {
+        familyContext = settings.getAIContext();
+        console.log('📋 Using family context for AI generation');
+      }
+    } catch (settingsError) {
+      console.warn('⚠️  Could not fetch family settings:', settingsError.message);
+      // Continue without family context
+    }
+
+    // Generate description with family context
     const description = await generateTaskDescription(taskName, {
       assignedToName,
       dueDate,
       tags,
+      familyContext,
     });
 
     // If AI generation failed or no API key, return helpful message

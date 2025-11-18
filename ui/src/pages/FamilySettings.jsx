@@ -31,19 +31,30 @@ export default function FamilySettings() {
   const fetchSettings = async () => {
     try {
       const token = await getAccessTokenSilently();
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/settings`, {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      console.log('Fetching settings from:', `${apiUrl}/api/settings`);
+      
+      const response = await fetch(`${apiUrl}/api/settings`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Settings loaded:', data);
         setSettings(data.settings.preferences);
+      } else {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        setMessage({ type: 'error', text: `Failed to load settings: ${response.status}` });
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
-      setMessage({ type: 'error', text: 'Failed to load settings' });
+      setMessage({ type: 'error', text: `Failed to load settings: ${error.message}` });
     } finally {
       setLoading(false);
     }

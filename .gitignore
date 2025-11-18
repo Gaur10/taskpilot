@@ -27,3 +27,4 @@ curl_commands
 dist/
 build/
 coverage/
+update-auth0-urls.sh

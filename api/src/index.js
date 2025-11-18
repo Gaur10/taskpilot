@@ -45,6 +45,7 @@ app.use(
     origin:
       process.env.NODE_ENV === 'production'
         ? [
+            'http://localhost:5173', // Allow local development
             'https://taskpilot-mcs.pages.dev',
             'https://ff45c2cf.taskpilot-mcs.pages.dev',
             /https:\/\/.*\.taskpilot-mcs\.pages\.dev$/, // Allow all Cloudflare preview URLs

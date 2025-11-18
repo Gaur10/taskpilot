@@ -191,16 +191,23 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
     const tenant = req.auth.payload['https://taskpilot-api/tenant'];
     const ownerSub = req.auth.payload.sub;
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, status, dueDate } = req.body;
 
     if (!tenant) {
       return res.status(400).json({ ok: false, error: 'Tenant context is required' });
     }
 
+    // Build update object with only provided fields
+    const updates = {};
+    if (name !== undefined) updates.name = name?.trim();
+    if (description !== undefined) updates.description = description?.trim();
+    if (status !== undefined) updates.status = status;
+    if (dueDate !== undefined) updates.dueDate = dueDate;
+
     // Only update if tenant matches AND user is the owner
     const project = await Project.findOneAndUpdate(
       { _id: id, tenantId: tenant, ownerSub },
-      { name: name?.trim(), description: description?.trim() },
+      updates,
       { new: true, runValidators: true },
     );
 

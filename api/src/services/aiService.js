@@ -29,8 +29,8 @@ export async function generateTaskDescription(taskName, context = {}) {
       return null;
     }
 
-    // Get Gemini model (gemini-1.5-flash is fast and free)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Get Gemini model (gemini-pro is stable and free)
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // Build prompt with context
     const prompt = buildPrompt(taskName, context);

@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import ProjectForm from "./ProjectForm";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 export default function ProjectList() {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       if (!isAuthenticated) return;
       const token = await getAccessTokenSilently();
 
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tasks`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -26,14 +26,14 @@ export default function ProjectList() {
       if (data.ok) {
         setProjects(data.projects);
       } else {
-        console.error("❌ Failed to fetch projects:", data.error);
+        console.error("❌ Failed to fetch tasks:", data.error);
       }
     } catch (err) {
-      console.error("❌ Error fetching projects:", err);
+      console.error("❌ Error fetching tasks:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [getAccessTokenSilently, isAuthenticated]);
 
   const refreshProjects = () => {
     setLoading(true);
@@ -42,14 +42,14 @@ export default function ProjectList() {
 
   useEffect(() => {
     fetchProjects();
-  }, [getAccessTokenSilently, isAuthenticated]);
+  }, [fetchProjects]);
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this project?")) return;
+    if (!confirm("Are you sure you want to delete this task?")) return;
 
     try {
       const token = await getAccessTokenSilently();
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tasks/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -76,6 +76,8 @@ export default function ProjectList() {
       description: project.description,
       status: project.status,
       dueDate: project.dueDate ? new Date(project.dueDate) : null,
+      assignedToEmail: project.assignedToEmail || "",
+      assignedToName: project.assignedToName || "",
     });
   };
 
@@ -87,13 +89,19 @@ export default function ProjectList() {
   const saveEdit = async (id) => {
     try {
       const token = await getAccessTokenSilently();
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/${id}`, {
+      const payload = {
+        ...editForm,
+        performedByEmail: user?.email || "",
+        performedByName: user?.name || user?.email || "Unknown",
+      };
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tasks/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -142,18 +150,18 @@ export default function ProjectList() {
     return new Date(dueDate) < new Date();
   };
 
-  if (!isAuthenticated) return <p className="text-center text-gray-600">Please log in to see your projects.</p>;
-  if (loading) return <p className="text-center text-gray-600">Loading projects...</p>;
+  if (!isAuthenticated) return <p className="text-center text-gray-600">Please log in to see your tasks.</p>;
+  if (loading) return <p className="text-center text-gray-600">Loading tasks...</p>;
   return (
     <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Your Projects</h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Family Tasks</h2>
       <ProjectForm onProjectCreated={refreshProjects} />
 
       {projects.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <div className="text-6xl mb-4">📋</div>
-          <p className="text-xl text-gray-600">No projects yet</p>
-          <p className="text-gray-500 mt-2">Create your first project to get started!</p>
+          <p className="text-xl text-gray-600">No tasks yet</p>
+          <p className="text-gray-500 mt-2">Create your first task to get started!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -200,6 +208,20 @@ export default function ProjectList() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
                       minDate={new Date()}
                     />
+                    <input
+                      type="email"
+                      placeholder="Assign to email"
+                      value={editForm.assignedToEmail}
+                      onChange={(e) => setEditForm({ ...editForm, assignedToEmail: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Assignee name"
+                      value={editForm.assignedToName}
+                      onChange={(e) => setEditForm({ ...editForm, assignedToName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
+                    />
                     <div className="flex gap-2">
                       <button
                         onClick={() => saveEdit(project._id)}
@@ -228,6 +250,15 @@ export default function ProjectList() {
                     <p className="text-gray-600 text-sm mb-4 min-h-[40px]">
                       {project.description || "No description"}
                     </p>
+
+                    {project.assignedToEmail && (
+                      <div className="flex items-center gap-2 mb-3 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
+                        <span>👤</span>
+                        <span>
+                          <strong>{project.assignedToName || project.assignedToEmail}</strong>
+                        </span>
+                      </div>
+                    )}
 
                     {project.dueDate && (
                       <div className={`flex items-center gap-2 mb-4 text-sm ${overdue ? "text-red-600 font-semibold" : "text-gray-500"}`}>

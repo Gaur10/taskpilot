@@ -4,22 +4,24 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 /**
- * Form to create a new project with status and due date.
+ * Form to create a new task with status, due date, and assignment.
  */
 export default function ProjectForm({ onProjectCreated }) {
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
   const [dueDate, setDueDate] = useState(null);
+  const [assignedToEmail, setAssignedToEmail] = useState("");
+  const [assignedToName, setAssignedToName] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      setMessage("⚠️ Project name is required.");
+      setMessage("⚠️ Task name is required.");
       return;
     }
   
@@ -28,23 +30,40 @@ export default function ProjectForm({ onProjectCreated }) {
   
     try {
       const token = await getAccessTokenSilently();
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`, {
+      const payload = {
+        name,
+        description,
+        status,
+        dueDate,
+        createdByEmail: user?.email || "",
+        createdByName: user?.name || user?.email || "Unknown",
+      };
+
+      // Add assignment fields if provided
+      if (assignedToEmail?.trim()) {
+        payload.assignedToEmail = assignedToEmail.trim();
+        payload.assignedToName = assignedToName?.trim() || assignedToEmail.trim();
+      }
+
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, description, status, dueDate }),
+        body: JSON.stringify(payload),
       });
   
       const data = await res.json();
   
       if (data.ok) {
-        setMessage("✅ Project created successfully!");
+        setMessage("✅ Task created successfully!");
         setName("");
         setDescription("");
         setStatus("todo");
         setDueDate(null);
+        setAssignedToEmail("");
+        setAssignedToName("");
   
         // Refresh parent list
         onProjectCreated?.();
@@ -55,7 +74,7 @@ export default function ProjectForm({ onProjectCreated }) {
         setMessage(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (err) {
-      console.error("Error creating project:", err);
+      console.error("Error creating task:", err);
       setMessage("❌ Network error — please retry.");
     } finally {
       setLoading(false);
@@ -70,16 +89,16 @@ export default function ProjectForm({ onProjectCreated }) {
       onSubmit={handleSubmit}
       className="bg-white rounded-lg shadow-md p-6 mb-8"
     >
-      <h3 className="text-xl font-semibold text-gray-800 mb-4">Create New Project</h3>
+      <h3 className="text-xl font-semibold text-gray-800 mb-4">Create New Task</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Project Name *
+            Task Name *
           </label>
           <input
             type="text"
-            placeholder="Enter project name"
+            placeholder="Enter task name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -107,12 +126,40 @@ export default function ProjectForm({ onProjectCreated }) {
           Description
         </label>
         <textarea
-          placeholder="Enter project description (optional)"
+          placeholder="Enter task description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows="3"
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Assign to Email (Optional)
+          </label>
+          <input
+            type="email"
+            placeholder="family@example.com"
+            value={assignedToEmail}
+            onChange={(e) => setAssignedToEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Assignee Name (Optional)
+          </label>
+          <input
+            type="text"
+            placeholder="Family Member Name"
+            value={assignedToName}
+            onChange={(e) => setAssignedToName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
       </div>
 
       <div className="mb-4">
@@ -139,7 +186,7 @@ export default function ProjectForm({ onProjectCreated }) {
               : "bg-indigo-600 hover:bg-indigo-700 text-white"
           }`}
         >
-          {loading ? "Creating..." : "Create Project"}
+          {loading ? "Creating..." : "Create Task"}
         </button>
 
         {message && (

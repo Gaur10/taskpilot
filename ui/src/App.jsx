@@ -28,19 +28,19 @@ function App() {
             </button>
             <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
               <div className="bg-white p-6 rounded-lg shadow-md">
-                <div className="text-3xl mb-3">📋</div>
-                <h3 className="text-lg font-semibold mb-2">Organize Tasks</h3>
-                <p className="text-gray-600">Create, track, and manage all your projects in one place.</p>
+                <div className="text-3xl mb-3">👨‍👩‍👧‍👦</div>
+                <h3 className="text-lg font-semibold mb-2">Family Calendar</h3>
+                <p className="text-gray-600">Manage tasks together with your family in one shared space.</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-md">
-                <div className="text-3xl mb-3">⏰</div>
-                <h3 className="text-lg font-semibold mb-2">Track Deadlines</h3>
-                <p className="text-gray-600">Set due dates and never miss an important deadline.</p>
+                <div className="text-3xl mb-3">🎯</div>
+                <h3 className="text-lg font-semibold mb-2">Assign Tasks</h3>
+                <p className="text-gray-600">Assign tasks to family members and track who's doing what.</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow-md">
-                <div className="text-3xl mb-3">✅</div>
-                <h3 className="text-lg font-semibold mb-2">Stay Productive</h3>
-                <p className="text-gray-600">Monitor progress and celebrate your achievements.</p>
+                <div className="text-3xl mb-3">📊</div>
+                <h3 className="text-lg font-semibold mb-2">Track Progress</h3>
+                <p className="text-gray-600">Monitor deadlines, view history, and stay organized together.</p>
               </div>
             </div>
           </div>

@@ -14,7 +14,7 @@ import publicRouter from './routes/public.js';
 import { injectMockRoles } from './middleware/mockRoles.js';
 import { checkRole } from './middleware/checkRole.js';
 import { injectMockTenant } from './middleware/injectMockTenant.js';
-import projectRoutes from './routes/projectRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import { checkJwt } from './middleware/checkJwt.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -45,14 +45,14 @@ app.use(
     origin:
       process.env.NODE_ENV === 'production'
         ? [
-            'http://localhost:5173', // Allow local development
-            'https://taskpilot-mcs.pages.dev',
-            'https://ff45c2cf.taskpilot-mcs.pages.dev',
-            /https:\/\/.*\.taskpilot-mcs\.pages\.dev$/, // Allow all Cloudflare preview URLs
-          ]
+          'http://localhost:5173', // Allow local development
+          'https://taskpilot-mcs.pages.dev',
+          'https://ff45c2cf.taskpilot-mcs.pages.dev',
+          /https:\/\/.*\.taskpilot-mcs\.pages\.dev$/, // Allow all Cloudflare preview URLs
+        ]
         : ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
@@ -124,8 +124,8 @@ app.get('/api/tenant-info', requireAuth, maybeInjectMockRoles, maybeInjectMockTe
 
 });
 
-// === New Project Routes ===
-app.use('/api/projects', projectRoutes);
+// === Task Routes (Family Calendar) ===
+app.use('/api/tasks', taskRoutes);
 
 // Temporary test route — will remove later
 app.get('/api/protected', checkJwt, (req, res) => {

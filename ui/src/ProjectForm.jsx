@@ -16,10 +16,56 @@ export default function ProjectForm({ onProjectCreated }) {
   const [dueDate, setDueDate] = useState(null);
   const [assignedToMember, setAssignedToMember] = useState("");
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleMemberChange = (memberEmail) => {
     setAssignedToMember(memberEmail);
+  };
+
+  const handleAISuggest = async () => {
+    if (!name.trim()) {
+      setMessage("⚠️ Enter a task name first to get AI suggestions");
+      setTimeout(() => setMessage(""), 2000);
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const token = await getAccessTokenSilently();
+      const member = FAMILY_MEMBERS.find(m => m.email === assignedToMember);
+      
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ai/suggest-description`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          taskName: name,
+          assignedToName: member?.name,
+          dueDate,
+          tags: [],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok && data.description) {
+        setDescription(data.description);
+        setMessage("✨ AI suggestion added!");
+        setTimeout(() => setMessage(""), 2000);
+      } else {
+        setMessage("⚠️ AI service unavailable");
+        setTimeout(() => setMessage(""), 2000);
+      }
+    } catch (error) {
+      console.error("Error getting AI suggestion:", error);
+      setMessage("❌ Failed to get AI suggestion");
+      setTimeout(() => setMessage(""), 2000);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -128,11 +174,31 @@ export default function ProjectForm({ onProjectCreated }) {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Description
-        </label>
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Description
+          </label>
+          <button
+            type="button"
+            onClick={handleAISuggest}
+            disabled={aiLoading || !name.trim()}
+            className="text-sm px-3 py-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 flex items-center gap-1"
+          >
+            {aiLoading ? (
+              <>
+                <span className="animate-spin">🔄</span>
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <span>✨</span>
+                <span>AI Suggest</span>
+              </>
+            )}
+          </button>
+        </div>
         <textarea
-          placeholder="Enter task description (optional)"
+          placeholder="Enter task description (or use AI Suggest)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows="3"

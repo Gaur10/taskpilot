@@ -237,9 +237,11 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
   try {
     const tenant = req.auth.payload['https://taskpilot-api/tenant'];
     const { id } = req.params;
-    const { name, description, status, dueDate, assignedToEmail, assignedToName } = req.body;
-    const userEmail = req.auth.payload.email || req.auth.payload['https://taskpilot-api/email'];
-    const userName = req.auth.payload.name || req.auth.payload['https://taskpilot-api/name'] || userEmail;
+    const { name, description, status, dueDate, assignedToEmail, assignedToName, performedByEmail: bodyEmail, performedByName: bodyName } = req.body;
+    
+    // Accept performedBy info from request body or fall back to JWT token
+    const userEmail = bodyEmail || req.auth.payload.email || req.auth.payload['https://taskpilot-api/email'];
+    const userName = bodyName || req.auth.payload.name || req.auth.payload['https://taskpilot-api/name'] || userEmail;
 
     if (!tenant) {
       return res.status(400).json({ ok: false, error: 'Family context is required' });

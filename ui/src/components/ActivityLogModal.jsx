@@ -48,25 +48,67 @@ export default function ActivityLogModal({ isOpen, onClose, task }) {
   };
 
   const formatChanges = (changes) => {
-    if (!changes) return null;
+    if (!changes || Object.keys(changes).length === 0) return null;
     
     const items = [];
+    
+    if (changes.name) {
+      items.push(
+        <div key="name" className="mb-1">
+          <span className="font-medium">Name:</span> {changes.name.from} → {changes.name.to}
+        </div>
+      );
+    }
+    
+    if (changes.description) {
+      items.push(
+        <div key="description" className="mb-1">
+          <span className="font-medium">Description:</span> {changes.description.from} → {changes.description.to}
+        </div>
+      );
+    }
+    
     if (changes.status) {
       if (typeof changes.status === 'string') {
-        items.push(`Status: ${changes.status}`);
+        items.push(
+          <div key="status" className="mb-1">
+            <span className="font-medium">Status:</span> {changes.status}
+          </div>
+        );
       } else {
-        items.push(`Status: ${changes.status.from || 'none'} → ${changes.status.to}`);
-      }
-    }
-    if (changes.assignedTo) {
-      if (typeof changes.assignedTo === 'string') {
-        items.push(`Assigned to: ${changes.assignedTo}`);
-      } else {
-        items.push(`Assignment: ${changes.assignedTo.from || 'Unassigned'} → ${changes.assignedTo.to || 'Unassigned'}`);
+        items.push(
+          <div key="status" className="mb-1">
+            <span className="font-medium">Status:</span> {changes.status.from || 'none'} → {changes.status.to}
+          </div>
+        );
       }
     }
     
-    return items.length > 0 ? items.join(", ") : null;
+    if (changes.dueDate) {
+      items.push(
+        <div key="dueDate" className="mb-1">
+          <span className="font-medium">Due date:</span> {changes.dueDate.from} → {changes.dueDate.to}
+        </div>
+      );
+    }
+    
+    if (changes.assignedTo) {
+      if (typeof changes.assignedTo === 'string') {
+        items.push(
+          <div key="assignedTo" className="mb-1">
+            <span className="font-medium">Assigned to:</span> {changes.assignedTo}
+          </div>
+        );
+      } else {
+        items.push(
+          <div key="assignedTo" className="mb-1">
+            <span className="font-medium">Assignment:</span> {changes.assignedTo.from || 'Unassigned'} → {changes.assignedTo.to || 'Unassigned'}
+          </div>
+        );
+      }
+    }
+    
+    return items.length > 0 ? <div>{items}</div> : null;
   };
 
   const formatTimestamp = (timestamp) => {
@@ -133,9 +175,9 @@ export default function ActivityLogModal({ isOpen, onClose, task }) {
                           by <strong>{activity.performedByName || activity.performedBy}</strong>
                         </p>
                         {formatChanges(activity.changes) && (
-                          <p className="text-sm text-gray-700 mt-2 bg-gray-50 px-3 py-2 rounded">
+                          <div className="text-sm text-gray-700 mt-2 bg-gray-50 px-3 py-2 rounded">
                             {formatChanges(activity.changes)}
-                          </p>
+                          </div>
                         )}
                       </div>
                       <span className="text-xs text-gray-500 whitespace-nowrap">

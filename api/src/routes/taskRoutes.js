@@ -258,8 +258,17 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
     const changes = {};
     let action = 'updated';
 
-    if (name !== undefined) {updates.name = name?.trim();}
-    if (description !== undefined) {updates.description = description?.trim();}
+    // Track name changes
+    if (name !== undefined && name?.trim() !== existingTask.name) {
+      updates.name = name?.trim();
+      changes.name = { from: existingTask.name, to: name?.trim() };
+    }
+    
+    // Track description changes
+    if (description !== undefined && description?.trim() !== existingTask.description) {
+      updates.description = description?.trim();
+      changes.description = { from: existingTask.description || '(empty)', to: description?.trim() || '(empty)' };
+    }
     
     // Track status changes
     if (status !== undefined && status !== existingTask.status) {
@@ -268,7 +277,18 @@ router.put('/:id', requireAuth, injectMockRoles, injectMockTenant, async (req, r
       action = status === 'done' ? 'completed' : 'status_changed';
     }
     
-    if (dueDate !== undefined) {updates.dueDate = dueDate;}
+    // Track due date changes
+    if (dueDate !== undefined) {
+      const oldDate = existingTask.dueDate ? new Date(existingTask.dueDate).toISOString().split('T')[0] : null;
+      const newDate = dueDate ? new Date(dueDate).toISOString().split('T')[0] : null;
+      if (oldDate !== newDate) {
+        updates.dueDate = dueDate;
+        changes.dueDate = { 
+          from: oldDate || 'No due date', 
+          to: newDate || 'No due date' 
+        };
+      }
+    }
     
     // Track assignment changes
     if (assignedToEmail !== undefined) {

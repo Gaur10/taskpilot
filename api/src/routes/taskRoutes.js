@@ -50,11 +50,13 @@ const router = express.Router();
  */
 router.post('/', requireAuth, injectMockRoles, injectMockTenant, async (req, res) => {
   try {
-    const { name, description, assignedToEmail, assignedToName, status, dueDate } = req.body;
+    const { name, description, assignedToEmail, assignedToName, status, dueDate, createdByEmail: bodyEmail, createdByName: bodyName } = req.body;
     const tenant = req.auth.payload['https://taskpilot-api/tenant'];
     const ownerSub = req.auth.payload.sub;
-    const createdByEmail = req.auth.payload.email || req.auth.payload['https://taskpilot-api/email'];
-    const createdByName = req.auth.payload.name || req.auth.payload['https://taskpilot-api/name'] || createdByEmail;
+    
+    // Use email from body (sent by frontend) or fall back to JWT token
+    const createdByEmail = bodyEmail || req.auth.payload.email || req.auth.payload['https://taskpilot-api/email'];
+    const createdByName = bodyName || req.auth.payload.name || req.auth.payload['https://taskpilot-api/name'] || createdByEmail;
 
     // Validate required fields
     if (!name || !name.trim()) {

@@ -40,6 +40,11 @@ const familySettingsSchema = new mongoose.Schema(
         default: '',
         maxlength: 200,
       },
+      zipCode: {
+        type: String,
+        default: '',
+        maxlength: 10,
+      },
       routines: {
         groceryShopping: {
           type: String,
@@ -70,6 +75,10 @@ familySettingsSchema.methods.getAIContext = function () {
 
   if (this.preferences.neighborhood) {
     context.push(`Location: ${this.preferences.neighborhood}`);
+  }
+
+  if (this.preferences.zipCode) {
+    context.push(`Zip Code: ${this.preferences.zipCode}`);
   }
 
   if (this.preferences.groceryStores?.length > 0) {

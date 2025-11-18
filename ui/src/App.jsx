@@ -1,9 +1,13 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import TestApi from "./TestApi";
+import { Routes, Route } from "react-router-dom";
 import ProjectList from "./ProjectList";
+import FamilySettings from "./pages/FamilySettings";
+import Profile from "./pages/Profile";
+import Preferences from "./pages/Preferences";
+import UserMenu from "./components/UserMenu";
 
 function App() {
-  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
+  const { isAuthenticated, loginWithRedirect } = useAuth0();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -47,35 +51,33 @@ function App() {
         </div>
       ) : (
         // Dashboard
-        <>
-          <nav className="bg-white shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-16">
-                <h1 className="text-2xl font-bold text-indigo-600">TaskPilot</h1>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">
-                    {user?.email || user?.name}
-                  </span>
-                  <button
-                    onClick={() =>
-                      logout({ logoutParams: { returnTo: window.location.origin } })
-                    }
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </nav>
+        <Routes>
+          {/* Main Dashboard */}
+          <Route
+            path="/"
+            element={
+              <>
+                <nav className="bg-white shadow-sm">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                      <h1 className="text-2xl font-bold text-indigo-600">TaskPilot</h1>
+                      <UserMenu />
+                    </div>
+                  </div>
+                </nav>
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Optional: Uncomment to show API test */}
-            {/* <TestApi /> */}
-            
-            <ProjectList />
-          </main>
-        </>
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <ProjectList />
+                </main>
+              </>
+            }
+          />
+
+          {/* Settings Pages */}
+          <Route path="/settings" element={<FamilySettings />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/preferences" element={<Preferences />} />
+        </Routes>
       )}
     </div>
   );

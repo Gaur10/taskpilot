@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import ProjectForm from "./ProjectForm";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { FAMILY_MEMBERS } from "./config/familyMembers";
 
 export default function ProjectList() {
   const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
@@ -201,6 +202,32 @@ export default function ProjectList() {
                       <option value="in-progress">In Progress</option>
                       <option value="done">Done</option>
                     </select>
+                    <select
+                      value={editForm.assignedToEmail || ""}
+                      onChange={(e) => {
+                        const member = FAMILY_MEMBERS.find(m => m.email === e.target.value);
+                        setEditForm({ 
+                          ...editForm, 
+                          assignedToEmail: e.target.value,
+                          assignedToName: member ? member.name : ""
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- Select Family Member --</option>
+                      {FAMILY_MEMBERS.map((member) => (
+                        <option key={member.email} value={member.email}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="email"
+                      value={editForm.assignedToEmail || ""}
+                      readOnly
+                      placeholder="Auto-filled when member selected"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 bg-gray-50 text-gray-700"
+                    />
                     <DatePicker
                       selected={editForm.dueDate}
                       onChange={(date) => setEditForm({ ...editForm, dueDate: date })}
@@ -208,20 +235,6 @@ export default function ProjectList() {
                       placeholderText="Select due date"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
                       minDate={new Date()}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Assign to email"
-                      value={editForm.assignedToEmail}
-                      onChange={(e) => setEditForm({ ...editForm, assignedToEmail: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Assignee name"
-                      value={editForm.assignedToName}
-                      onChange={(e) => setEditForm({ ...editForm, assignedToName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
                     />
                     <div className="flex gap-2">
                       <button

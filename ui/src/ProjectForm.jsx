@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { FAMILY_MEMBERS } from "./config/familyMembers";
 
 /**
  * Form to create a new task with status, due date, and assignment.
@@ -13,10 +14,13 @@ export default function ProjectForm({ onProjectCreated }) {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("todo");
   const [dueDate, setDueDate] = useState(null);
-  const [assignedToEmail, setAssignedToEmail] = useState("");
-  const [assignedToName, setAssignedToName] = useState("");
+  const [assignedToMember, setAssignedToMember] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  const handleMemberChange = (memberEmail) => {
+    setAssignedToMember(memberEmail);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,9 +44,12 @@ export default function ProjectForm({ onProjectCreated }) {
       };
 
       // Add assignment fields if provided
-      if (assignedToEmail?.trim()) {
-        payload.assignedToEmail = assignedToEmail.trim();
-        payload.assignedToName = assignedToName?.trim() || assignedToEmail.trim();
+      if (assignedToMember) {
+        const member = FAMILY_MEMBERS.find(m => m.email === assignedToMember);
+        if (member) {
+          payload.assignedToEmail = member.email;
+          payload.assignedToName = member.name;
+        }
       }
 
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/tasks`, {
@@ -62,8 +69,7 @@ export default function ProjectForm({ onProjectCreated }) {
         setDescription("");
         setStatus("todo");
         setDueDate(null);
-        setAssignedToEmail("");
-        setAssignedToName("");
+        setAssignedToMember("");
   
         // Refresh parent list
         onProjectCreated?.();
@@ -137,27 +143,32 @@ export default function ProjectForm({ onProjectCreated }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Assign to Email (Optional)
+            Assign to
           </label>
-          <input
-            type="email"
-            placeholder="family@example.com"
-            value={assignedToEmail}
-            onChange={(e) => setAssignedToEmail(e.target.value)}
+          <select
+            value={assignedToMember}
+            onChange={(e) => handleMemberChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
+          >
+            <option value="">-- Select Family Member --</option>
+            {FAMILY_MEMBERS.map((member) => (
+              <option key={member.email} value={member.email}>
+                {member.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Assignee Name (Optional)
+            Email
           </label>
           <input
-            type="text"
-            placeholder="Family Member Name"
-            value={assignedToName}
-            onChange={(e) => setAssignedToName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            type="email"
+            value={assignedToMember}
+            readOnly
+            placeholder="Auto-filled when member selected"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
           />
         </div>
       </div>

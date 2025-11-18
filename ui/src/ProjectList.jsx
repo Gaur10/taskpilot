@@ -4,10 +4,12 @@ import ProjectForm from "./ProjectForm";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FAMILY_MEMBERS } from "./config/familyMembers";
+import ActivityLogModal from "./components/ActivityLogModal";
 
 export default function ProjectList() {
   const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
   const [projects, setProjects] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -290,6 +292,13 @@ export default function ProjectList() {
 
                     <div className="flex gap-2 mt-4">
                       <button
+                        onClick={() => setSelectedTask(project)}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200"
+                        title="View activity history"
+                      >
+                        📊 History
+                      </button>
+                      <button
                         onClick={() => startEdit(project)}
                         className="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded-lg transition duration-200"
                       >
@@ -309,6 +318,13 @@ export default function ProjectList() {
           })}
         </div>
       )}
+
+      {/* Activity Log Modal */}
+      <ActivityLogModal
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask || {}}
+      />
     </div>
   );
 }

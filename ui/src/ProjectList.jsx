@@ -24,9 +24,10 @@ export default function ProjectList() {
 
       const data = await res.json();
       if (data.ok) {
-        setProjects(data.projects);
+        setProjects(data.tasks || []);
       } else {
         console.error("❌ Failed to fetch tasks:", data.error);
+        setProjects([]);
       }
     } catch (err) {
       console.error("❌ Error fetching tasks:", err);

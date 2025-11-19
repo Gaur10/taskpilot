@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { Link } from 'react-router-dom';
+import PlaceAutocomplete from '../components/PlaceAutocomplete';
 
 export default function FamilySettings() {
   const { getAccessTokenSilently } = useAuth0();
@@ -267,13 +268,24 @@ export default function FamilySettings() {
             
             {/* Add Store */}
             <div className="flex gap-2 mb-4">
-              <input
-                type="text"
+              <PlaceAutocomplete
                 value={newStore}
-                onChange={(e) => setNewStore(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addStore()}
+                onChange={setNewStore}
+                onSelect={(storeName) => {
+                  setNewStore(storeName);
+                  // Auto-add if under limit
+                  if (settings.groceryStores.length < 10) {
+                    setSettings({
+                      ...settings,
+                      groceryStores: [...settings.groceryStores, storeName],
+                    });
+                    setNewStore('');
+                  }
+                }}
+                zipCode={settings.zipCode}
+                placeType="store"
                 placeholder="Store name (e.g., Whole Foods Downtown)"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={settings.groceryStores.length >= 10}
               />
               <button
                 onClick={addStore}
@@ -316,12 +328,14 @@ export default function FamilySettings() {
 
             {/* Add School */}
             <div className="space-y-3 mb-4 p-4 bg-gray-50 rounded-lg">
-              <input
-                type="text"
+              <PlaceAutocomplete
                 value={newSchool.name}
-                onChange={(e) => setNewSchool({ ...newSchool, name: e.target.value })}
+                onChange={(name) => setNewSchool({ ...newSchool, name })}
+                onSelect={(schoolName) => setNewSchool({ ...newSchool, name: schoolName })}
+                zipCode={settings.zipCode}
+                placeType="school"
                 placeholder="School name (required)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={settings.schools.length >= 5}
               />
               <input
                 type="text"

@@ -13,6 +13,27 @@ export default function ProjectList() {
   const [loading, setLoading] = useState(true);
   const [editingProject, setEditingProject] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [familyProfiles, setFamilyProfiles] = useState([]);
+
+  // Fetch family profiles
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        if (!isAuthenticated) return;
+        const token = await getAccessTokenSilently();
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/family`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setFamilyProfiles(data.profiles || []);
+        }
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+      }
+    };
+    fetchProfiles();
+  }, [getAccessTokenSilently, isAuthenticated]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -207,21 +228,25 @@ export default function ProjectList() {
                     <select
                       value={editForm.assignedToEmail || ""}
                       onChange={(e) => {
-                        const member = FAMILY_MEMBERS.find(m => m.email === e.target.value);
+                        const memberStatic = FAMILY_MEMBERS.find(m => m.email === e.target.value);
+                        const memberProfile = familyProfiles.find(p => p.email === e.target.value);
                         setEditForm({ 
                           ...editForm, 
                           assignedToEmail: e.target.value,
-                          assignedToName: member ? member.name : ""
+                          assignedToName: memberProfile?.name || memberStatic?.name || ""
                         });
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">-- Select Family Member --</option>
-                      {FAMILY_MEMBERS.map((member) => (
-                        <option key={member.email} value={member.email}>
-                          {member.name}
-                        </option>
-                      ))}
+                      {FAMILY_MEMBERS.map((member) => {
+                        const profile = familyProfiles.find(p => p.email === member.email);
+                        return (
+                          <option key={member.email} value={member.email}>
+                            {profile?.avatar?.type === 'base64' ? '🖼️' : profile?.avatar?.data || '👤'} {profile?.name || member.name}
+                          </option>
+                        );
+                      })}
                     </select>
                     <input
                       type="email"
@@ -267,14 +292,27 @@ export default function ProjectList() {
                       {project.description || "No description"}
                     </p>
 
-                    {project.assignedToEmail && (
-                      <div className="flex items-center gap-2 mb-3 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
-                        <span>👤</span>
-                        <span>
-                          <strong>{project.assignedToName || project.assignedToEmail}</strong>
-                        </span>
-                      </div>
-                    )}
+                    {project.assignedToEmail && (() => {
+                      const profile = familyProfiles.find(p => p.email === project.assignedToEmail || p.userId === project.assignedToEmail);
+                      return (
+                        <div className="flex items-center gap-2 mb-3 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg">
+                          {profile?.avatar?.type === 'base64' ? (
+                            <img
+                              src={profile.avatar.data}
+                              alt="Profile"
+                              className="w-6 h-6 rounded-full object-cover border-2 border-indigo-300"
+                            />
+                          ) : (
+                            <span className="w-6 h-6 flex items-center justify-center text-base">
+                              {profile?.avatar?.data || '👤'}
+                            </span>
+                          )}
+                          <span>
+                            <strong>{project.assignedToName || project.assignedToEmail}</strong>
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     {project.dueDate && (
                       <div className={`flex items-center gap-2 mb-4 text-sm ${overdue ? "text-red-600 font-semibold" : "text-gray-500"}`}>

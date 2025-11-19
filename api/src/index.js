@@ -57,7 +57,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: '5mb' })); // Increase limit for profile pictures (base64 encoding adds ~33% overhead)
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Consolidated logging: send morgan output to our logger
 app.use(

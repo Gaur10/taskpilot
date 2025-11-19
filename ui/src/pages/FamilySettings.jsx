@@ -22,11 +22,43 @@ export default function FamilySettings() {
 
   const [newStore, setNewStore] = useState('');
   const [newSchool, setNewSchool] = useState({ name: '', pickupTime: '', location: '' });
+  const [cityState, setCityState] = useState('');
+  const [lookingUpZip, setLookingUpZip] = useState(false);
 
   // Fetch settings on load
   useEffect(() => {
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Lookup city/state when zip code changes
+  useEffect(() => {
+    const lookupZipCode = async () => {
+      if (settings.zipCode && settings.zipCode.length === 5) {
+        setLookingUpZip(true);
+        try {
+          const response = await fetch(`https://api.zippopotam.us/us/${settings.zipCode}`);
+          if (response.ok) {
+            const data = await response.json();
+            const place = data.places[0];
+            setCityState(`${place['place name']}, ${place['state abbreviation']}`);
+          } else {
+            setCityState('');
+          }
+        } catch (error) {
+          console.error('Error looking up zip code:', error);
+          setCityState('');
+        } finally {
+          setLookingUpZip(false);
+        }
+      } else {
+        setCityState('');
+      }
+    };
+
+    const debounce = setTimeout(lookupZipCode, 500);
+    return () => clearTimeout(debounce);
+  }, [settings.zipCode]);
 
   const fetchSettings = async () => {
     try {
@@ -191,6 +223,12 @@ export default function FamilySettings() {
                   maxLength={10}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {lookingUpZip && (
+                  <p className="text-xs text-blue-600 mt-1">🔍 Looking up location...</p>
+                )}
+                {cityState && !lookingUpZip && (
+                  <p className="text-xs text-green-600 mt-1">📍 {cityState}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
                   AI will use this to find nearby stores and understand your area
                 </p>

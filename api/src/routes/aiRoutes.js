@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { injectMockTenant } from '../middleware/injectMockTenant.js';
 import { generateTaskDescription } from '../services/aiService.js';
 import FamilySettings from '../models/familySettingsModel.js';
 
@@ -15,10 +16,10 @@ const router = express.Router();
  * @body {string} dueDate - (Optional) Due date
  * @body {array} tags - (Optional) Task tags
  */
-router.post('/suggest-description', requireAuth, async (req, res) => {
+router.post('/suggest-description', requireAuth, injectMockTenant, async (req, res) => {
   try {
     const { taskName, assignedToName, dueDate, tags } = req.body;
-    const tenantId = req.auth.tenant;
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
 
     // Validate input
     if (!taskName || taskName.trim().length === 0) {

@@ -28,84 +28,89 @@ export default function PlaceAutocomplete({
 
   // Search for places when user types
   useEffect(() => {
-    const searchPlaces = async () => {
-      if (!value || value.length < 2 || !zipCode || zipCode.length !== 5) {
+    const searchPlaces = () => {
+      if (!value || value.length < 2) {
         setSuggestions([]);
         return;
       }
 
       setLoading(true);
-      try {
-        // Using Overpass API (OpenStreetMap) for free place search
-        const overpassQuery = `
-          [out:json][timeout:5];
-          area[postal_code="${zipCode}"]->.searchArea;
-          (
-            node[amenity=${placeType === 'school' ? 'school' : 'supermarket'}]["name"~"${value}",i](area.searchArea);
-            way[amenity=${placeType === 'school' ? 'school' : 'supermarket'}]["name"~"${value}",i](area.searchArea);
-          );
-          out center 10;
-        `;
-
-        const response = await fetch('https://overpass-api.de/api/interpreter', {
-          method: 'POST',
-          body: overpassQuery,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const places = data.elements.map(el => ({
-            name: el.tags?.name || 'Unknown',
-            address: [el.tags?.['addr:street'], el.tags?.['addr:city']].filter(Boolean).join(', '),
-          }));
-          setSuggestions(places.slice(0, 5));
-          setShowSuggestions(true);
-        } else {
-          // Fallback: generate common suggestions
-          generateFallbackSuggestions(value, placeType);
-        }
-      } catch (error) {
-        console.error('Error fetching places:', error);
-        generateFallbackSuggestions(value, placeType);
-      } finally {
-        setLoading(false);
-      }
+      // Show suggestions immediately based on common chains
+      generateFallbackSuggestions(value, placeType);
+      setLoading(false);
     };
 
-    const debounce = setTimeout(searchPlaces, 300);
+    const debounce = setTimeout(searchPlaces, 200);
     return () => clearTimeout(debounce);
-  }, [value, zipCode, placeType]);
+  }, [value, placeType]);
 
   const generateFallbackSuggestions = (searchValue, type) => {
+    const search = searchValue.toLowerCase();
+    
     if (type === 'school') {
-      const schools = [
+      const schoolTypes = [
         'Elementary School',
         'Middle School', 
         'High School',
         'Charter School',
         'Private School',
+        'Montessori School',
+        'Preschool',
+        'Academy',
       ];
-      setSuggestions(
-        schools
-          .filter(s => s.toLowerCase().includes(searchValue.toLowerCase()))
-          .map(name => ({ name: `${searchValue} ${name}`, address: 'Near you' }))
-      );
+      
+      // If user typed a school name, suggest with types
+      const suggestions = schoolTypes
+        .map(type => ({ 
+          name: `${searchValue.charAt(0).toUpperCase() + searchValue.slice(1)} ${type}`,
+          address: 'Suggestion'
+        }));
+      
+      // Also add exact match
+      suggestions.unshift({
+        name: searchValue.charAt(0).toUpperCase() + searchValue.slice(1),
+        address: 'Use as typed'
+      });
+      
+      setSuggestions(suggestions.slice(0, 6));
     } else {
       const stores = [
         'Whole Foods Market',
+        'Trader Joe\'s',
         'Safeway',
         'Kroger',
-        'Trader Joe\'s',
-        'Costco',
-        'Target',
-        'Walmart',
         'Albertsons',
+        'Costco Wholesale',
+        'Target',
+        'Walmart Supercenter',
+        'Sprouts Farmers Market',
+        'Vons',
+        'Ralphs',
+        'QFC',
+        'Fred Meyer',
+        'King Soopers',
+        'Smith\'s',
+        'Food Lion',
+        'Publix',
+        'H-E-B',
+        'Wegmans',
+        'Aldi',
+        'Lidl',
       ];
-      setSuggestions(
-        stores
-          .filter(s => s.toLowerCase().includes(searchValue.toLowerCase()))
-          .map(name => ({ name, address: 'Chain store' }))
-      );
+      
+      const filtered = stores
+        .filter(s => s.toLowerCase().includes(search))
+        .map(name => ({ name, address: 'Chain store' }));
+      
+      // Add exact match if not in the list
+      if (filtered.length === 0 || !filtered.some(s => s.name.toLowerCase() === search)) {
+        filtered.unshift({
+          name: searchValue.charAt(0).toUpperCase() + searchValue.slice(1),
+          address: 'Use as typed'
+        });
+      }
+      
+      setSuggestions(filtered.slice(0, 6));
     }
     setShowSuggestions(true);
   };

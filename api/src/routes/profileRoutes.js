@@ -5,21 +5,32 @@ import { injectMockTenant } from '../middleware/injectMockTenant.js';
 
 const router = express.Router();
 
+// Conditional middleware based on environment
+const allowMocks = (process.env.NODE_ENV !== 'production') || (process.env.ALLOW_MOCK_AUTH === 'true');
+const maybeInjectMockTenant = allowMocks ? injectMockTenant : (req, res, next) => next();
+
 /**
  * GET /api/profile
  * Get current user's profile
  */
-router.get('/', requireAuth, injectMockTenant, async (req, res) => {
+router.get('/', requireAuth, maybeInjectMockTenant, async (req, res) => {
   try {
     const userId = req.auth.payload.sub;
-    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'] || 'tenant-A';
     
     let profile = await UserProfile.findOne({ userId, tenantId });
     
     // Create profile if doesn't exist
     if (!profile) {
-      const email = req.auth.payload.email || req.auth.payload['https://taskpilot-api/email'];
-      const name = req.auth.payload.name || req.auth.payload['https://taskpilot-api/name'] || email;
+      const email = req.auth.payload.email || 
+                    req.auth.payload['https://taskpilot-api/email'] || 
+                    `user-${userId.substring(0, 8)}@taskpilot.app`;
+      const name = req.auth.payload.name || 
+                   req.auth.payload['https://taskpilot-api/name'] || 
+                   req.auth.payload.nickname ||
+                   email.split('@')[0];
+      
+      console.log('Creating profile with:', { userId, tenantId, email, name });
       
       profile = await UserProfile.create({
         userId,
@@ -56,10 +67,10 @@ router.get('/', requireAuth, injectMockTenant, async (req, res) => {
  * PUT /api/profile
  * Update current user's profile
  */
-router.put('/', requireAuth, injectMockTenant, async (req, res) => {
+router.put('/', requireAuth, maybeInjectMockTenant, async (req, res) => {
   try {
     const userId = req.auth.payload.sub;
-    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'] || 'tenant-A';
     const { name, avatar, avatarType, defaultEmoji, preferences } = req.body;
     
     // Validate avatar size if base64 (limit to 1MB)
@@ -121,9 +132,9 @@ router.put('/', requireAuth, injectMockTenant, async (req, res) => {
  * GET /api/profile/family
  * Get all profiles in the same family/tenant
  */
-router.get('/family', requireAuth, injectMockTenant, async (req, res) => {
+router.get('/family', requireAuth, maybeInjectMockTenant, async (req, res) => {
   try {
-    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'] || 'tenant-A';
     
     const profiles = await UserProfile.find({ tenantId }).sort({ name: 1 });
     

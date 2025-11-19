@@ -28,3 +28,6 @@ dist/
 build/
 coverage/
 update-auth0-urls.sh
+
+# ─── Planning Documents ─────────────────────────────────────────
+ONBOARDING_PLAN.md

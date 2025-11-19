@@ -3,9 +3,29 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { Link } from 'react-router-dom';
 
 export default function UserMenu() {
-  const { user, logout } = useAuth0();
+  const { user, logout, getAccessTokenSilently } = useAuth0();
   const [isOpen, setIsOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
   const menuRef = useRef(null);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile(data.profile);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, [getAccessTokenSilently]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,7 +51,19 @@ export default function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <span className="text-sm text-gray-700">{user?.email}</span>
+        {/* Profile Picture */}
+        {userProfile?.avatar?.type === 'base64' ? (
+          <img
+            src={userProfile.avatar.data}
+            alt="Profile"
+            className="w-8 h-8 rounded-full object-cover border-2 border-gray-300"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-lg">
+            {userProfile?.avatar?.data || '👤'}
+          </div>
+        )}
+        <span className="text-sm text-gray-700">{userProfile?.name || user?.email}</span>
         <svg
           className="w-5 h-5 text-gray-600 hover:text-gray-800"
           fill="none"

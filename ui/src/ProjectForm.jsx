@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -18,6 +18,37 @@ export default function ProjectForm({ onProjectCreated }) {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [familyProfiles, setFamilyProfiles] = useState([]);
+
+  // Fetch family profiles with pictures
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/family`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setFamilyProfiles(data.profiles || []);
+        }
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+      }
+    };
+    if (isAuthenticated) {
+      fetchProfiles();
+    }
+  }, [getAccessTokenSilently, isAuthenticated]);
+
+  // Merge static config with dynamic profiles
+  const members = FAMILY_MEMBERS.map(member => {
+    const profile = familyProfiles.find(p => p.email === member.email || p.userId === member.email);
+    return {
+      ...member,
+      avatar: profile?.avatar || member.avatar,
+    };
+  });
 
   const handleMemberChange = (memberEmail) => {
     setAssignedToMember(memberEmail);
@@ -33,7 +64,7 @@ export default function ProjectForm({ onProjectCreated }) {
     setAiLoading(true);
     try {
       const token = await getAccessTokenSilently();
-      const member = FAMILY_MEMBERS.find(m => m.email === assignedToMember);
+      const member = members.find(m => m.email === assignedToMember);
       
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ai/suggest-description`, {
         method: "POST",
@@ -91,7 +122,7 @@ export default function ProjectForm({ onProjectCreated }) {
 
       // Add assignment fields if provided
       if (assignedToMember) {
-        const member = FAMILY_MEMBERS.find(m => m.email === assignedToMember);
+        const member = members.find(m => m.email === assignedToMember);
         if (member) {
           payload.assignedToEmail = member.email;
           payload.assignedToName = member.name;
@@ -217,9 +248,9 @@ export default function ProjectForm({ onProjectCreated }) {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="">-- Select Family Member --</option>
-            {FAMILY_MEMBERS.map((member) => (
+            {members.map((member) => (
               <option key={member.email} value={member.email}>
-                {member.name}
+                {member.avatar?.type === 'base64' ? '🖼️' : member.avatar?.data || '👤'} {member.name}
               </option>
             ))}
           </select>

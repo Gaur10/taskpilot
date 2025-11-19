@@ -31,6 +31,7 @@ export default function ProjectForm({ onProjectCreated }) {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log('🔍 Family profiles fetched:', data.profiles);
           setFamilyProfiles(data.profiles || []);
         }
       } catch (error) {
@@ -42,14 +43,15 @@ export default function ProjectForm({ onProjectCreated }) {
     }
   }, [getAccessTokenSilently, isAuthenticated]);
 
-  // Merge static config with dynamic profiles
-  const members = FAMILY_MEMBERS.map(member => {
-    const profile = familyProfiles.find(p => p.email === member.email || p.userId === member.email);
-    return {
-      ...member,
-      avatar: profile?.avatar || member.avatar,
-    };
-  });
+  // Use profiles from API, fall back to static config if no profiles yet
+  const members = familyProfiles.length > 0 
+    ? familyProfiles 
+    : FAMILY_MEMBERS.map(member => ({
+        ...member,
+        avatar: { type: 'emoji', data: '👤' },
+      }));
+  
+  console.log('👥 Members for selector:', members);
 
   const handleMemberChange = (memberEmail) => {
     setAssignedToMember(memberEmail);

@@ -228,18 +228,14 @@ export default function ProjectList() {
                     </select>
                     <div className="mb-3">
                       <MemberSelector
-                        members={FAMILY_MEMBERS.map(member => {
-                          const profile = familyProfiles.find(p => p.email === member.email);
-                          return {
-                            ...member,
-                            avatar: profile?.avatar || member.avatar,
-                            name: profile?.name || member.name,
-                          };
-                        })}
+                        members={familyProfiles.length > 0 ? familyProfiles : FAMILY_MEMBERS.map(m => ({
+                          ...m,
+                          avatar: { type: 'emoji', data: '👤' }
+                        }))}
                         selectedEmail={editForm.assignedToEmail || ""}
                         onSelect={(email) => {
-                          const memberStatic = FAMILY_MEMBERS.find(m => m.email === email);
                           const memberProfile = familyProfiles.find(p => p.email === email);
+                          const memberStatic = FAMILY_MEMBERS.find(m => m.email === email);
                           setEditForm({ 
                             ...editForm, 
                             assignedToEmail: email,

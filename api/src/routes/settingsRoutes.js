@@ -1,6 +1,7 @@
 import express from 'express';
 import FamilySettings from '../models/familySettingsModel.js';
 import { requireAuth } from '../middleware/auth.js';
+import { injectMockTenant } from '../middleware/injectMockTenant.js';
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * GET /api/settings
  * Get family settings for the authenticated tenant
  */
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, injectMockTenant, async (req, res) => {
   try {
     const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
 
@@ -53,7 +54,7 @@ router.get('/', requireAuth, async (req, res) => {
  * PUT /api/settings
  * Update family settings for the authenticated tenant
  */
-router.put('/', requireAuth, async (req, res) => {
+router.put('/', requireAuth, injectMockTenant, async (req, res) => {
   try {
     const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
     const { preferences } = req.body;
@@ -131,7 +132,7 @@ router.put('/', requireAuth, async (req, res) => {
  * DELETE /api/settings
  * Reset family settings to defaults for the authenticated tenant
  */
-router.delete('/', requireAuth, async (req, res) => {
+router.delete('/', requireAuth, injectMockTenant, async (req, res) => {
   try {
     const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
 

@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FAMILY_MEMBERS } from "./config/familyMembers";
+import MemberSelector from "./components/MemberSelector";
 
 /**
  * Form to create a new task with status, due date, and assignment.
@@ -242,18 +243,11 @@ export default function ProjectForm({ onProjectCreated }) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Assign to
           </label>
-          <select
-            value={assignedToMember}
-            onChange={(e) => handleMemberChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">-- Select Family Member --</option>
-            {members.map((member) => (
-              <option key={member.email} value={member.email}>
-                {member.avatar?.type === 'base64' ? '🖼️' : member.avatar?.data || '👤'} {member.name}
-              </option>
-            ))}
-          </select>
+          <MemberSelector
+            members={members}
+            selectedEmail={assignedToMember}
+            onSelect={handleMemberChange}
+          />
         </div>
 
         <div>

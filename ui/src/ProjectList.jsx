@@ -5,6 +5,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { FAMILY_MEMBERS } from "./config/familyMembers";
 import ActivityLogModal from "./components/ActivityLogModal";
+import MemberSelector from "./components/MemberSelector";
 
 export default function ProjectList() {
   const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
@@ -225,29 +226,28 @@ export default function ProjectList() {
                       <option value="in-progress">In Progress</option>
                       <option value="done">Done</option>
                     </select>
-                    <select
-                      value={editForm.assignedToEmail || ""}
-                      onChange={(e) => {
-                        const memberStatic = FAMILY_MEMBERS.find(m => m.email === e.target.value);
-                        const memberProfile = familyProfiles.find(p => p.email === e.target.value);
-                        setEditForm({ 
-                          ...editForm, 
-                          assignedToEmail: e.target.value,
-                          assignedToName: memberProfile?.name || memberStatic?.name || ""
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="">-- Select Family Member --</option>
-                      {FAMILY_MEMBERS.map((member) => {
-                        const profile = familyProfiles.find(p => p.email === member.email);
-                        return (
-                          <option key={member.email} value={member.email}>
-                            {profile?.avatar?.type === 'base64' ? '🖼️' : profile?.avatar?.data || '👤'} {profile?.name || member.name}
-                          </option>
-                        );
-                      })}
-                    </select>
+                    <div className="mb-3">
+                      <MemberSelector
+                        members={FAMILY_MEMBERS.map(member => {
+                          const profile = familyProfiles.find(p => p.email === member.email);
+                          return {
+                            ...member,
+                            avatar: profile?.avatar || member.avatar,
+                            name: profile?.name || member.name,
+                          };
+                        })}
+                        selectedEmail={editForm.assignedToEmail || ""}
+                        onSelect={(email) => {
+                          const memberStatic = FAMILY_MEMBERS.find(m => m.email === email);
+                          const memberProfile = familyProfiles.find(p => p.email === email);
+                          setEditForm({ 
+                            ...editForm, 
+                            assignedToEmail: email,
+                            assignedToName: memberProfile?.name || memberStatic?.name || ""
+                          });
+                        }}
+                      />
+                    </div>
                     <input
                       type="email"
                       value={editForm.assignedToEmail || ""}

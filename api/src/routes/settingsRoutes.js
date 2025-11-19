@@ -10,7 +10,7 @@ const router = express.Router();
  */
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const tenantId = req.auth.tenant;
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
 
     let settings = await FamilySettings.findOne({ tenantId });
 
@@ -55,7 +55,7 @@ router.get('/', requireAuth, async (req, res) => {
  */
 router.put('/', requireAuth, async (req, res) => {
   try {
-    const tenantId = req.auth.tenant;
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
     const { preferences } = req.body;
 
     if (!preferences) {
@@ -133,7 +133,7 @@ router.put('/', requireAuth, async (req, res) => {
  */
 router.delete('/', requireAuth, async (req, res) => {
   try {
-    const tenantId = req.auth.tenant;
+    const tenantId = req.auth.payload['https://taskpilot-api/tenant'];
 
     const settings = await FamilySettings.findOneAndUpdate(
       { tenantId },
